@@ -1,0 +1,12 @@
+
+- name: Install Prometheus
+  apt:
+    name: prometheus
+    state: present
+    update_cache: true
+
+- name: Ensure Prometheus is running
+  service:
+    name: prometheus
+    state: started
+    enabled: true

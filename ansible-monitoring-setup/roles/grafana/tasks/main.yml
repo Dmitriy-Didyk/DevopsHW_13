@@ -1,0 +1,30 @@
+
+- name: Install Grafana
+  apt:
+    name: grafana
+    state: present
+    update_cache: true
+
+- name: Ensure Grafana is running
+  service:
+    name: grafana-server
+    state: started
+    enabled: true
+
+- name: Configure Grafana datasource
+  uri:
+    url: "http://localhost:3000/api/datasources"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer eyJrIjoielZhbnVFQXplMkF0TGE0eXVQblltTG5ST2RpYnVBUVIiLCJuIjoibXktYXBpLWtleSIsImlkIjoxfQ=="
+    body: |
+      {
+        "name": "Prometheus",
+        "type": "prometheus",
+        "url": "http://localhost:9090",
+        "access": "proxy",
+        "isDefault": true
+      }
+    status_code: 200
+    body_format: json

@@ -1,0 +1,8 @@
+
+- name: Full Monitoring Stack Setup
+  hosts: all
+  become: true
+  roles:
+    - grafana
+    - prometheus
+    - node_exporter
