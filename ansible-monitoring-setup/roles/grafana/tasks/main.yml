@@ -1,24 +1,23 @@
 - name: Install required dependencies
   apt:
-    name: ["apt-transport-https", "software-properties-common", "wget"]
+    name: ['wget', 'curl', 'gnupg']
     state: present
     update_cache: true
 
 - name: Add Grafana GPG key
-  apt_key:
-    url: https://packages.grafana.com/gpg.key
-    state: present
+  command: "wget -q -O - https://packages.grafana.com/gpg.key | apt-key add -"
+  args:
+    warn: false
 
 - name: Add Grafana APT repository
-  ansible.builtin.apt_repository:
-    repo: "deb https://packages.grafana.com/oss/deb stable main"
-    state: present
+  copy:
+    content: "deb https://packages.grafana.com/oss/deb stable main\n"
+    dest: /etc/apt/sources.list.d/grafana.list
 
 - name: Install Grafana
   apt:
     name: grafana
     state: present
-    update_cache: true
 
 - name: Ensure Grafana is running
   service:
@@ -28,48 +27,50 @@
 
 - name: Wait for Grafana to be ready
   uri:
-    url: "http://localhost:3000/login"
-    method: GET
-    status_code: 200
+    url: "http://localhost:3000"
+    status_code: 302
   register: grafana_ready
-  retries: 10
-  delay: 10
-  until: grafana_ready.status == 200
+  retries: 5
+  delay: 5
+  until: grafana_ready.status == 302
 
-- name: Generate Grafana API service account
+- name: Reset admin password
+  command: grafana-cli admin reset-admin-password Welcome1!
+  become: true
+
+- name: Create Grafana API service account
   uri:
     url: "http://localhost:3000/api/serviceaccounts"
     method: POST
+    user: admin
+    password: Welcome1!
     headers:
       Content-Type: "application/json"
-    url_username: "admin"
-    url_password: "Welcome1!"
     body: |
       {
         "name": "ansible-service-account",
         "role": "Admin"
       }
-    status_code: 201
     body_format: json
-  register: service_account_response
+    status_code: 201
+  register: service_account
 
 - name: Generate token for service account
   uri:
     url: "http://localhost:3000/api/serviceaccounts/{{ service_account.json.id }}/tokens"
     method: POST
-    headers:
-      Content-Type: "application/json"
     user: admin
     password: Welcome1!
+    headers:
+      Content-Type: "application/json"
     body: |
       {
         "name": "ansible-token",
         "secondsToLive": 86400
       }
     body_format: json
-    status_code: 200
-    return_content: yes
-  register: api_token
+    status_code: 201
+  register: token
 
 - name: Configure Grafana datasource
   uri:
@@ -77,7 +78,7 @@
     method: POST
     headers:
       Content-Type: "application/json"
-      Authorization: "Bearer {{ api_token.json.key }}"
+      Authorization: "Bearer {{ token.json.key }}"
     body: |
       {
         "name": "Prometheus",
