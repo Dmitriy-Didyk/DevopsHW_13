@@ -68,7 +68,7 @@
         "secondsToLive": 86400
       }
     body_format: json
-    status_code: 201
+    status_code: [200, 201]
   register: token
 
 - name: Configure Grafana datasource
