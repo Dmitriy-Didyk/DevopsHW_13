@@ -29,11 +29,10 @@
   uri:
     url: "http://localhost:3000/login"
     method: GET
-    status_code: 302
-  register: result
-  until: result.status == 302
-  retries: 5
-  delay: 5
+    status_code: 200
+    delay: 5
+    retries: 10
+    register: grafana_ready
 
 - name: Reset admin password
   command: grafana-cli admin reset-admin-password Welcome1!
