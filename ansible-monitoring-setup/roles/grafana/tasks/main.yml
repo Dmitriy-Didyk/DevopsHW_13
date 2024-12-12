@@ -1,19 +1,17 @@
 - name: Install required dependencies
   apt:
-    name: 
-      - software-properties-common
-      - apt-transport-https
-      - wget
+    name: ["apt-transport-https", "software-properties-common", "wget"]
     state: present
     update_cache: true
 
 - name: Add Grafana GPG key
-  apt_key:
-    url: https://packages.grafana.com/gpg.key
-    state: present
+  ansible.builtin.command:
+    cmd: wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+  args:
+    creates: /etc/apt/trusted.gpg.d/grafana.asc
 
 - name: Add Grafana APT repository
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb https://packages.grafana.com/oss/deb stable main"
     state: present
 
@@ -29,20 +27,23 @@
     state: started
     enabled: true
 
-- name: Wait for Grafana to start
-  wait_for:
-    port: 3000
+- name: Wait for Grafana to be ready
+  uri:
+    url: "http://localhost:3000/login"
+    method: GET
+    status_code: 200
     delay: 5
-    timeout: 60
+    retries: 10
+    register: grafana_ready
 
-- name: Generate Grafana API token
+- name: Generate Grafana API service account
   uri:
     url: "http://localhost:3000/api/serviceaccounts"
     method: POST
-    user: admin
-    password: Welcome1!
     headers:
       Content-Type: "application/json"
+    user: admin
+    password: Welcome1!
     body: |
       {
         "name": "ansible-service-account",
@@ -53,14 +54,14 @@
     return_content: yes
   register: service_account
 
-- name: Generate Grafana service account token
+- name: Generate token for service account
   uri:
     url: "http://localhost:3000/api/serviceaccounts/{{ service_account.json.id }}/tokens"
     method: POST
-    user: admin
-    password: Welcome1!
     headers:
       Content-Type: "application/json"
+    user: admin
+    password: Welcome1!
     body: |
       {
         "name": "ansible-token",
@@ -69,7 +70,7 @@
     body_format: json
     status_code: 200
     return_content: yes
-  register: grafana_token
+  register: api_token
 
 - name: Configure Grafana datasource
   uri:
@@ -77,7 +78,7 @@
     method: POST
     headers:
       Content-Type: "application/json"
-      Authorization: "Bearer {{ grafana_token.json.key }}"
+      Authorization: "Bearer {{ api_token.json.key }}"
     body: |
       {
         "name": "Prometheus",
