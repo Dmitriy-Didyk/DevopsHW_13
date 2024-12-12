@@ -32,7 +32,7 @@
     method: POST
     headers:
       Content-Type: "application/json"
-      Authorization: "Bearer eyJrIjoielZhbnVFQXplMkF0TGE0eXVQblltTG5ST2RpYnVBUVIiLCJuIjoibXktYXBpLWtleSIsImlkIjoxfQ=="
+      Authorization: "Bearer glsa_4uJgxZQ1upDwQtNzRxz1a1Nej3haADKZ_9e431614"
     body: |
       {
         "name": "Prometheus",
