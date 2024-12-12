@@ -5,10 +5,9 @@
     update_cache: true
 
 - name: Add Grafana GPG key
-  ansible.builtin.command:
-    cmd: wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
-  args:
-    creates: /etc/apt/trusted.gpg.d/grafana.asc
+  apt_key:
+    url: https://packages.grafana.com/gpg.key
+    state: present
 
 - name: Add Grafana APT repository
   ansible.builtin.apt_repository:
