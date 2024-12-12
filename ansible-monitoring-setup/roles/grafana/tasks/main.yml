@@ -42,17 +42,16 @@
     method: POST
     headers:
       Content-Type: "application/json"
-    user: admin
-    password: Welcome1!
+    url_username: "admin"
+    url_password: "Welcome1!"
     body: |
       {
         "name": "ansible-service-account",
         "role": "Admin"
       }
-    body_format: json
     status_code: 201
-    return_content: yes
-  register: service_account
+    body_format: json
+  register: service_account_response
 
 - name: Generate token for service account
   uri:
