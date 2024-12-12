@@ -26,13 +26,14 @@
     enabled: true
 
 - name: Wait for Grafana to be ready
-  uri:
-    url: "http://localhost:3000"
-    status_code: 302
-  register: grafana_ready
+  ansible.builtin.uri:
+    url: "http://localhost:3000/login"
+    method: GET
+    status_code: 200
+  register: result
+  until: result.status == 200
   retries: 5
   delay: 5
-  until: grafana_ready.status == 302
 
 - name: Reset admin password
   command: grafana-cli admin reset-admin-password Welcome1!
