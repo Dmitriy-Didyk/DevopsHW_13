@@ -1,6 +1,9 @@
 - name: Install required dependencies
   apt:
-    name: [gnupg, ca-certificates]
+    name: 
+      - software-properties-common
+      - apt-transport-https
+      - wget
     state: present
     update_cache: true
 
@@ -13,12 +16,12 @@
   apt_repository:
     repo: "deb https://packages.grafana.com/oss/deb stable main"
     state: present
-    update_cache: true
 
 - name: Install Grafana
   apt:
     name: grafana
     state: present
+    update_cache: true
 
 - name: Ensure Grafana is running
   service:
@@ -26,13 +29,55 @@
     state: started
     enabled: true
 
+- name: Wait for Grafana to start
+  wait_for:
+    port: 3000
+    delay: 5
+    timeout: 60
+
+- name: Generate Grafana API token
+  uri:
+    url: "http://localhost:3000/api/serviceaccounts"
+    method: POST
+    user: admin
+    password: Welcome1!
+    headers:
+      Content-Type: "application/json"
+    body: |
+      {
+        "name": "ansible-service-account",
+        "role": "Admin"
+      }
+    body_format: json
+    status_code: 201
+    return_content: yes
+  register: service_account
+
+- name: Generate Grafana service account token
+  uri:
+    url: "http://localhost:3000/api/serviceaccounts/{{ service_account.json.id }}/tokens"
+    method: POST
+    user: admin
+    password: Welcome1!
+    headers:
+      Content-Type: "application/json"
+    body: |
+      {
+        "name": "ansible-token",
+        "secondsToLive": 86400
+      }
+    body_format: json
+    status_code: 200
+    return_content: yes
+  register: grafana_token
+
 - name: Configure Grafana datasource
   uri:
     url: "http://localhost:3000/api/datasources"
     method: POST
     headers:
       Content-Type: "application/json"
-      Authorization: "Bearer glsa_4uJgxZQ1upDwQtNzRxz1a1Nej3haADKZ_9e431614"
+      Authorization: "Bearer {{ grafana_token.json.key }}"
     body: |
       {
         "name": "Prometheus",
@@ -41,5 +86,5 @@
         "access": "proxy",
         "isDefault": true
       }
-    status_code: 200
     body_format: json
+    status_code: 200
