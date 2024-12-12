@@ -26,12 +26,12 @@
     enabled: true
 
 - name: Wait for Grafana to be ready
-  ansible.builtin.uri:
+  uri:
     url: "http://localhost:3000/login"
     method: GET
-    status_code: 200
+    status_code: 302
   register: result
-  until: result.status == 200
+  until: result.status == 302
   retries: 5
   delay: 5
 
@@ -43,10 +43,9 @@
   uri:
     url: "http://localhost:3000/api/serviceaccounts"
     method: POST
-    user: admin
-    password: Welcome1!
     headers:
       Content-Type: "application/json"
+      Authorization: "Basic {{ 'admin:Welcome1!' | b64encode }}"
     body: |
       {
         "name": "ansible-service-account",
@@ -60,10 +59,9 @@
   uri:
     url: "http://localhost:3000/api/serviceaccounts/{{ service_account.json.id }}/tokens"
     method: POST
-    user: admin
-    password: Welcome1!
     headers:
       Content-Type: "application/json"
+      Authorization: "Basic {{ 'admin:Welcome1!' | b64encode }}"
     body: |
       {
         "name": "ansible-token",
