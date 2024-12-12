@@ -31,9 +31,10 @@
     url: "http://localhost:3000/login"
     method: GET
     status_code: 200
-    delay: 5
-    retries: 10
-    register: grafana_ready
+  register: grafana_ready
+  retries: 10
+  delay: 10
+  until: grafana_ready.status == 200
 
 - name: Generate Grafana API service account
   uri:
